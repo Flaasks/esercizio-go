@@ -1,0 +1,48 @@
+# Binari compilati
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+*.test
+
+# Output di build
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Scripts
+*.bat
+*.sh
+
+# Documentazione
+README.md
+*.md
+
+# Temporary files
+*.log
+*.tmp

@@ -1,0 +1,31 @@
+# Builder stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copia go.mod e go.sum
+COPY go.mod go.sum ./
+
+# Download delle dipendenze
+RUN go mod download
+
+# Copia tutto il codice sorgente
+COPY . .
+
+# Compila il client
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o client ./cmd/client
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copia l'eseguibile dal builder
+COPY --from=builder /app/client .
+
+# Il client non espone porte, si connette agli altri servizi
+# Avvia il client in modalità interattiva
+ENTRYPOINT ["./client"]
+CMD ["-v", "-lb", "round-robin"]

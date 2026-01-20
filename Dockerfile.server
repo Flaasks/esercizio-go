@@ -1,0 +1,38 @@
+# Builder stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copia go.mod e go.sum
+COPY go.mod go.sum ./
+
+# Download delle dipendenze
+RUN go mod download
+
+# Copia tutto il codice sorgente
+COPY . .
+
+# Rigeneraprotobuf se necessario (assicura che proto file sono presenti)
+# I file .pb.go devono essere già generati localmente prima della build Docker
+# Ma se necessario, potrebbe richiedere protoc nel container
+
+# Compila il server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copia l'eseguibile dal builder
+COPY --from=builder /app/server .
+
+# Espone le porte 6000-6010 per i server replicati
+EXPOSE 6000-6010
+
+# Avvia il server
+# L'ID e la porta saranno passati come argomenti
+ENTRYPOINT ["./server"]
+CMD ["-id", "server-1"]

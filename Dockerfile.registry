@@ -1,0 +1,32 @@
+# Builder stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copia go.mod e go.sum
+COPY go.mod go.sum ./
+
+# Download delle dipendenze
+RUN go mod download
+
+# Copia tutto il codice sorgente
+COPY . .
+
+# Compila il registry
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o registry ./cmd/registry
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copia l'eseguibile dal builder
+COPY --from=builder /app/registry .
+
+# Espone la porta 5000
+EXPOSE 5000
+
+# Avvia il registry
+CMD ["./registry"]

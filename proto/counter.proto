@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package counter;
+
+option go_package = "github.com/Flaasks/esercizio-go/pkg/pb";
+
+// Servizio Counter con replicazione quorum-based
+service CounterService {
+    rpc Increment(IncrementRequest) returns (CounterResponse);
+    rpc Decrement(DecrementRequest) returns (CounterResponse);
+    rpc GetValue(GetValueRequest) returns (CounterResponse);
+    // RPC per replicazione peer-to-peer tra server
+    rpc ReplicateIncrement(ReplicationRequest) returns (ReplicationResponse);
+    rpc ReplicateDecrement(ReplicationRequest) returns (ReplicationResponse);
+}
+
+message IncrementRequest {
+    int32 amount = 1;
+}
+
+message DecrementRequest {
+    int32 amount = 1;
+}
+
+message GetValueRequest {
+    // No fields needed
+}
+
+message CounterResponse {
+    int32 value = 1;
+    int64 version = 2;        // Versione dello stato per quorum
+    string server_id = 3;
+}
+
+// Messaggio per replicazione tra server (quorum-based)
+message ReplicationRequest {
+    int32 amount = 1;
+    int64 version = 2;        // Versione della modifica
+    string operation = 3;     // "increment" o "decrement"
+}
+
+message ReplicationResponse {
+    bool success = 1;
+    int32 value = 2;
+    int64 version = 3;
+    string error = 4;
+}

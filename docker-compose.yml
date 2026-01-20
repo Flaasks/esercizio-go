@@ -1,0 +1,97 @@
+services:
+  # Service Registry
+  registry:
+    build:
+      context: .
+      dockerfile: Dockerfile.registry
+    container_name: service-registry
+    ports:
+      - "5000:5000"
+    networks:
+      - grpc-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5000"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Server 1
+  server1:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: counter-server-1
+    command: ["-id", "server-1"]
+    ports:
+      - "6000:6000"
+    environment:
+      - REGISTRY_ADDRESS=registry:5000
+      - SERVER_HOST=server1
+    networks:
+      - grpc-network
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Server 2
+  server2:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    command: ["-id", "server-2"]
+    container_name: counter-server-2
+    ports:
+      - "6001:6001"
+    environment:
+      - REGISTRY_ADDRESS=registry:5000
+      - SERVER_HOST=server2
+    networks:
+      - grpc-network
+    depends_on:
+      registry:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Client con Round-Robin
+  client-roundrobin:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: counter-client-rr
+    command: ["-v", "-lb", "round-robin"]
+    environment:
+      - REGISTRY_ADDRESS=registry:5000
+    networks:
+      - grpc-network
+    depends_on:
+      - server1
+      - server2
+    stdin_open: true
+    tty: true
+    profiles:
+      - client
+
+  # Client con Random
+  client-random:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: counter-client-random
+    command: ["-v", "-lb", "random"]
+    environment:
+      - REGISTRY_ADDRESS=registry:5000
+    networks:
+      - grpc-network
+    depends_on:
+      - server1
+      - server2
+    stdin_open: true
+    tty: true
+    profiles:
+      - client
+
+networks:
+  grpc-network:
+    driver: bridge
